@@ -1,5 +1,6 @@
 import * as React from "react";
 import { FilterPanelProps } from "../types";
+import { RemoteAutocomplete } from "./RemoteAutoComplete";
 
 export function FilterPanel({
     filters,
@@ -44,7 +45,7 @@ export function FilterPanel({
                             <RemoteAutocomplete
                                 config={config}
                                 value={value ?? []}
-                                onChange={(val) => onChange(config.key, val)}
+                                onChange={(val: any) => onChange(config.key, val)}
                                 autocompleteFetchFn={autocompleteFetchFn}
                             />
                         </div>

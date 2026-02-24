@@ -1,7 +1,7 @@
 import * as React from "react";
 import { AutocompleteFetchFn, FilterConfig, FilterOption } from "../types";
 
-function RemoteAutocomplete({
+export function RemoteAutocomplete({
   config,
   value,
   onChange,
