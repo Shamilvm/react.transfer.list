@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@smart/react-transfer-list": [
+        "./src/index.ts"
+      ]
+    },
     "target": "ES2018",
     "lib": [
       "ES2018",
