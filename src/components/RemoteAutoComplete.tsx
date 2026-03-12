@@ -1,5 +1,5 @@
 import * as React from "react";
-import { AutocompleteFetchFn, FilterConfig, FilterOption } from "../types";
+import { FilterConfig, FilterOption } from "../types";
 
 export function RemoteAutocomplete({
   config,
@@ -10,10 +10,10 @@ export function RemoteAutocomplete({
   config: FilterConfig;
   value: FilterOption[];
   onChange: (val: FilterOption[]) => void;
-  autocompleteFetchFn?: AutocompleteFetchFn;
+  autocompleteFetchFn?: any;
 }) {
   const [options, setOptions] = React.useState<FilterOption[]>(
-    config.options ?? []
+    config.options ?? [],
   );
   const [loading, setLoading] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
@@ -57,9 +57,7 @@ export function RemoteAutocomplete({
         }}
       />
 
-      {loading && (
-        <div style={{ fontSize: 12, marginTop: 4 }}>Loading...</div>
-      )}
+      {loading && <div style={{ fontSize: 12, marginTop: 4 }}>Loading...</div>}
 
       {showDropdown && options.length > 0 && (
         <div
@@ -97,7 +95,9 @@ export function RemoteAutocomplete({
 
       {/* Selected tags */}
       {value?.length > 0 && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+        <div
+          style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}
+        >
           {value.map((v) => (
             <div
               key={v.value}
