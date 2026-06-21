@@ -1,166 +1,158 @@
 import * as React from "react";
 import { FilterPanelProps } from "../types";
-// import { RemoteAutocomplete } from "./RemoteAutoComplete";
+import { FilterField } from "./filter/FilterField";
+
+function hasFilterValue(val: unknown): boolean {
+  if (val == null) return false;
+  if (val === "") return false;
+  if (Array.isArray(val) && val.length === 0) return false;
+  if (typeof val === "boolean") return val;
+  return true;
+}
 
 export function FilterPanel({
   filters,
   filterValues,
   onChange,
   onApply,
+  onReset,
+  autocompleteFetchFn,
 }: FilterPanelProps) {
-  const hasAnyFilter = filters.some((f) => {
-    const val = filterValues[f.key];
-    if (Array.isArray(val)) return val.length > 0;
-    return !!val;
-  });
+  const hasAnyFilter = filters.some((f) => hasFilterValue(filterValues[f.key]));
 
   return (
     <div
       style={{
-        padding: 16,
         marginTop: 12,
-        border: "1px solid #ddd",
-        borderRadius: 8,
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        background: "#ffffff",
+        marginBottom: 12,
+        border: "1px solid #e5e7eb",
+        borderRadius: 10,
+        background: "#fff",
+        overflow: "hidden",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
       }}
     >
-      {filters.map((config) => {
-        const value = filterValues[config.key];
+      {/* Header */}
+      <div
+        style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid #f0f0f0",
+          background: "#fafafa",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>
+          Filters
+        </div>
+        <span style={{ fontSize: 12, color: "#6b7280" }}>
+          {filters.length} field{filters.length !== 1 ? "s" : ""}
+        </span>
+      </div>
 
-        //autocomplete
-        // if (config.type === "autocomplete") {
-        //   return (
-        //     <div
-        //       key={config.key}
-        //       style={{ display: "flex", gap: 16, alignItems: "center" }}
-        //     >
-        //       <div style={{ minWidth: 120, fontWeight: 500, fontSize: 12 }}>
-        //         {config.label}
-        //       </div>
-
-        //       <RemoteAutocomplete
-        //         config={config}
-        //         value={value ?? []}
-        //         onChange={(val: any) => onChange(config.key, val)}
-        //         autocompleteFetchFn={autocompleteFetchFn}
-        //       />
-        //     </div>
-        //   );
-        // }
-
-        //radio
-        if (config.type === "radio") {
-          return (
+      {/* Scrollable fields grid */}
+      <div
+        className="stl-filter-scroll"
+        style={{
+          maxHeight: 360,
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: 16,
+          scrollbarWidth: "thin",
+          scrollbarColor: "#d1d5db transparent",
+        }}
+      >
+        <div
+          className="stl-filter-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 16,
+          }}
+        >
+          {filters.map((config) => (
             <div
               key={config.key}
-              style={{ display: "flex", gap: 16, alignItems: "center" }}
+              style={{
+                gridColumn: config.colSpan === 2 ? "1 / -1" : undefined,
+                padding: 12,
+                borderRadius: 8,
+                border: "1px solid #f3f4f6",
+                background: "#fcfcfd",
+              }}
             >
-              <div style={{ minWidth: 120, fontWeight: 500, fontSize: 12 }}>
-                {config.label}
-              </div>
-
-              <div style={{ display: "flex", gap: 16 }}>
-                {config.options?.map((opt) => (
-                  <label
-                    key={opt.value}
-                    style={{
-                      cursor: "pointer",
-                      fontSize: 12,
-                      display: "flex",
-                      alignItems: "end",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name={config.key}
-                      value={opt.value}
-                      checked={value === opt.value}
-                      onChange={(e) => onChange(config.key, e.target.value)}
-                    />{" "}
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
+              <FilterField
+                config={config}
+                value={filterValues[config.key]}
+                onChange={(val) => onChange(config.key, val)}
+                autocompleteFetchFn={autocompleteFetchFn}
+              />
             </div>
-          );
-        }
+          ))}
+        </div>
+      </div>
 
-        // checkbox
-        if (config.type === "checkbox") {
-          return (
-            <div
-              key={config.key}
-              style={{ display: "flex", gap: 16, alignItems: "center" }}
-            >
-              <div style={{ minWidth: 120, fontWeight: 500, fontSize: 12 }}>
-                {config.label}
-              </div>
-
-              <div style={{ display: "flex", gap: 24 }}>
-                {config.options?.map((opt) => {
-                  const checked = Array.isArray(value)
-                    ? value.includes(opt.value)
-                    : false;
-
-                  return (
-                    <label
-                      key={opt.value}
-                      style={{
-                        cursor: "pointer",
-                        fontSize: 12,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          const current: string[] = Array.isArray(value)
-                            ? value
-                            : [];
-
-                          const next = e.target.checked
-                            ? [...current, opt.value]
-                            : current.filter((v) => v !== opt.value);
-
-                          onChange(config.key, next);
-                        }}
-                      />{" "}
-                      {opt.label}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-
-        return null;
-      })}
-
-      {/* Apply Button */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      {/* Footer actions */}
+      <div
+        style={{
+          padding: "12px 16px",
+          borderTop: "1px solid #f0f0f0",
+          background: "#fafafa",
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 8,
+        }}
+      >
         <button
+          type="button"
+          onClick={onReset}
+          style={{
+            padding: "7px 14px",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            color: "#374151",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          Reset
+        </button>
+        <button
+          type="button"
           disabled={!hasAnyFilter}
           onClick={onApply}
           style={{
-            padding: "5px 10px",
-            borderRadius: 6,
+            padding: "7px 16px",
+            borderRadius: 8,
             border: "none",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-            background: hasAnyFilter ? "#0baae9" : "#ccc",
-            color: "white",
+            background: hasAnyFilter ? "#0baae9" : "#d1d5db",
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
             cursor: hasAnyFilter ? "pointer" : "not-allowed",
-            fontSize: 11,
+            boxShadow: hasAnyFilter ? "0 1px 3px rgba(11,170,233,0.35)" : "none",
           }}
         >
           Apply Filters
         </button>
       </div>
+
+      <style>{`
+        .stl-filter-scroll::-webkit-scrollbar { width: 6px; }
+        .stl-filter-scroll::-webkit-scrollbar-track { background: transparent; }
+        .stl-filter-scroll::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 999px;
+        }
+        @media (max-width: 640px) {
+          .stl-filter-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
