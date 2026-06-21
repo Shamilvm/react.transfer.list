@@ -1,10 +1,7 @@
 import * as React from "react";
 import { AutocompleteFetchFn, FilterOption } from "../types";
-import {
-  defaultAutocompleteFetchFn,
-  mergeFilterOptions,
-  useDebouncedValue,
-} from "./listFetch";
+import { useDebouncedValue } from "./useDebouncedValue";
+import { defaultAutocompleteFetchFn, mergeFilterOptions } from "../utils/listFetch";
 
 type UseRemoteListOptionsProps = {
   remoteUrl?: string;
@@ -33,16 +30,12 @@ export function useRemoteListOptions({
   const [error, setError] = React.useState<string | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
   const selectedRef = React.useRef(selected);
-  selectedRef.current = selected;
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
   React.useEffect(() => {
-    if (!remoteUrl) {
-      setOptions(staticOptions);
-      setHasMore(false);
-    }
-  }, [remoteUrl, staticOptions]);
+    selectedRef.current = selected;
+  }, [selected]);
 
   const fetchPage = React.useCallback(
     async (pageNum: number, append: boolean) => {
@@ -66,18 +59,13 @@ export function useRemoteListOptions({
         if (controller.signal.aborted) return;
 
         setOptions((prev) =>
-          mergeFilterOptions(
-            append ? prev : [],
-            result,
-            selectedRef.current,
-          ),
+          mergeFilterOptions(append ? prev : [], result, selectedRef.current),
         );
         setHasMore(result.length >= limit);
         setPage(pageNum);
       } catch (err: unknown) {
         if (controller.signal.aborted) return;
-        const message =
-          err instanceof Error ? err.message : "Failed to load options";
+        const message = err instanceof Error ? err.message : "Failed to load options";
         setError(message);
         if (!append) {
           setOptions(mergeFilterOptions(selectedRef.current));
@@ -94,7 +82,6 @@ export function useRemoteListOptions({
 
   React.useEffect(() => {
     if (!remoteUrl) return;
-    setPage(1);
     fetchPage(1, false);
   }, [remoteUrl, debouncedSearch, limit, enabled, fetchPage]);
 
@@ -116,7 +103,7 @@ export function useRemoteListOptions({
     options: remoteUrl ? options : staticOptions,
     loading,
     loadingMore,
-    hasMore,
+    hasMore: remoteUrl ? hasMore : false,
     error,
     loadMore,
     refresh,

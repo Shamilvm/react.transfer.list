@@ -1,10 +1,6 @@
 import * as React from "react";
-import {
-  ActiveFilter,
-  FetchFn,
-  TransferItem,
-} from "../types";
-import { defaultFetchFn, excludeByIds, filterBySearch } from "./utils";
+import { ActiveFilter, FetchFn, TransferItem } from "../types";
+import { excludeByIds, filterBySearch } from "../utils/items";
 
 type UseTransferDataProps = {
   remoteUrl: string | TransferItem[];
@@ -51,8 +47,7 @@ export function useTransferData({
       const data = Array.isArray(result) ? result : [];
       setDataLeft(excludeByIds(data, dataRight));
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to fetch data";
+      const message = err instanceof Error ? err.message : "Failed to fetch data";
       setError(message);
       setDataLeft([]);
     } finally {

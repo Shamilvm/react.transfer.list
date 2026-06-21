@@ -1,13 +1,10 @@
-import { useState } from "react";
-import TransferList, {
-  defaultAutocompleteFetchFn,
-  mapToFilterOptions,
-} from "@smart/react-transfer-list";
+import React, { useState } from "react";
+import TransferList, { mapToFilterOptions } from "react-transfer-list";
 import type {
   TransferItem,
   FetchFn,
   AutocompleteFetchFn,
-} from "@smart/react-transfer-list";
+} from "react-transfer-list";
 
 const MOCK_EMPLOYEES: TransferItem[] = [
   { id: 1, text: "Alice Johnson", media: "https://i.pravatar.cc/40?img=1" },
@@ -33,9 +30,7 @@ const ALL_GROUPS = [
 const mockFetchFn: FetchFn = async (_url, { search, filter }) => {
   let data = [...MOCK_EMPLOYEES];
 
-  const statusFilter = filter?.find((f) => "status" in f)?.status as
-    | string[]
-    | undefined;
+  const statusFilter = filter?.find((f) => "status" in f)?.status as string[] | undefined;
   if (statusFilter?.length) {
     data = data.filter((item) => {
       const isActive = Number(item.id) <= 7;
@@ -71,7 +66,7 @@ const mockAutocompleteFetchFn: AutocompleteFetchFn = async (_url, params) => {
  *
  * import { axiosGet } from "@function/service";
  * import { apiSelectLink } from "@function/service/functions";
- * import { mapToFilterOptions } from "@smart/react-transfer-list";
+ * import { mapToFilterOptions } from "react-transfer-list";
  *
  * const appAutocompleteFetchFn: AutocompleteFetchFn = async (url, params) => {
  *   const data = await axiosGet({

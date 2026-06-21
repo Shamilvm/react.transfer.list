@@ -1,5 +1,5 @@
 import { TransferItem } from "../types";
-import { dedupeById } from "./utils";
+import { dedupeById } from "./items";
 
 /** Shared across TransferList instances on the same page for one-click paste. */
 let transferListClipboard: TransferItem[] | null = null;

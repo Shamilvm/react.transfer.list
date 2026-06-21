@@ -1,49 +1,4 @@
-import {
-  ActiveFilter,
-  FetchFn,
-  FilterConfig,
-  FilterOption,
-  TransferItem,
-} from "../types";
-
-export function dedupeById(items: TransferItem[]): TransferItem[] {
-  const seen = new Set<string | number>();
-  return items.filter((item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
-  });
-}
-
-export function filterBySearch(
-  items: TransferItem[],
-  search: string,
-): TransferItem[] {
-  if (!search.trim()) return items;
-  const lower = search.toLowerCase();
-  return items.filter((item) =>
-    item.text?.toString().toLowerCase().includes(lower),
-  );
-}
-
-export function excludeByIds(
-  items: TransferItem[],
-  excluded: TransferItem[],
-): TransferItem[] {
-  const excludedIds = new Set(excluded.map((item) => item.id));
-  return items.filter((item) => !excludedIds.has(item.id));
-}
-
-export function isValidTransferItem(item: unknown): item is TransferItem {
-  if (!item || typeof item !== "object") return false;
-  const candidate = item as TransferItem;
-  return candidate.id != null && typeof candidate.text === "string";
-}
-
-export function parseTransferItems(data: unknown): TransferItem[] {
-  if (!Array.isArray(data)) return [];
-  return dedupeById(data.filter(isValidTransferItem));
-}
+import { ActiveFilter, FilterConfig, FilterOption } from "../types";
 
 export function buildFilterArray(
   filterValues: Record<string, unknown>,
@@ -68,9 +23,7 @@ export function buildFilterArray(
     });
 }
 
-export function getDefaultFilterValues(
-  filters: FilterConfig[],
-): Record<string, unknown> {
+export function getDefaultFilterValues(filters: FilterConfig[]): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   filters.forEach((filter) => {
     if (filter.defaultValue !== undefined) {
@@ -107,8 +60,7 @@ export function getChipLabel(
       (config.type === "chip" && !config.multiple)) &&
     typeof val === "string"
   ) {
-    const label =
-      config.options.find((o) => o.value === val)?.label ?? val;
+    const label = config.options.find((o) => o.value === val)?.label ?? val;
     return `${displayKey}: ${label}`;
   }
 
@@ -137,23 +89,3 @@ export function getChipLabel(
   const displayVal = Array.isArray(val) ? val.join(", ") : String(val ?? "");
   return `${displayKey}: ${displayVal}`;
 }
-
-export const defaultFetchFn: FetchFn = async (url, { search, filter }) => {
-  const filterParams = new URLSearchParams();
-  filterParams.append("search", search ?? "");
-  filterParams.append("filter", JSON.stringify(filter ?? []));
-
-  const response = await fetch(`${url}?${filterParams.toString()}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const result = await response.json();
-  if (Array.isArray(result)) return result;
-  if (Array.isArray(result?.data)) return result.data;
-  return [];
-};

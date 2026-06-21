@@ -2,24 +2,15 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@smart/react-transfer-list": [
-        "./src/index.ts"
-      ]
+      "react-transfer-list": ["./src/index.ts"]
     },
     "target": "ES2018",
-    "lib": [
-      "ES2018",
-      "DOM"
-    ],
+    "lib": ["ES2018", "DOM"],
     "module": "ESNext",
     "jsx": "react",
-    "declaration": true,
-    "declarationDir": "dist/types",
-    "outDir": "dist",
     "moduleResolution": "node",
-    "strict": true
+    "strict": true,
+    "noEmit": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

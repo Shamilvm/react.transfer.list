@@ -1,16 +1,9 @@
 import * as React from "react";
-import {
-  AutocompleteFetchFn,
-  FilterConfig,
-  FilterOption,
-} from "../../types";
-import { RemoteAutocomplete } from "../RemoteAutoComplete";
-import { RemoteSelect } from "../RemoteSelect";
-import {
-  defaultAutocompleteFetchFn,
-  getListLimit,
-  useRemoteListOptions,
-} from "../../common";
+import { AutocompleteFetchFn, FilterConfig, FilterOption } from "../../types";
+import { RemoteAutocomplete } from "../RemoteAutoComplete/RemoteAutoComplete";
+import { RemoteSelect } from "../RemoteSelect/RemoteSelect";
+import { defaultAutocompleteFetchFn } from "../../utils";
+import { getListLimit, useRemoteListOptions } from "../../hooks";
 import {
   inlineSearchStyle,
   MultiSelectBox,
@@ -24,7 +17,7 @@ import {
   focusInput,
   inputStyle,
   labelStyle,
-} from "./styles";
+} from "./fieldStyles";
 
 type FilterFieldProps = {
   config: FilterConfig;
@@ -70,7 +63,9 @@ function TagsInput({
         ref={inputRef}
         type="text"
         value={draft}
-        placeholder={value.length === 0 ? (placeholder ?? "Type and press Enter") : "Add more..."}
+        placeholder={
+          value.length === 0 ? (placeholder ?? "Type and press Enter") : "Add more..."
+        }
         style={inlineSearchStyle}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -254,13 +249,15 @@ export function FilterField({
   const remoteOptions = useFieldOptions(config, autocompleteFetchFn);
   const resolvedOptions = config.remoteUrl
     ? remoteOptions.options
-    : config.options ?? [];
+    : (config.options ?? []);
 
   const inputHandlers = {
-    onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      focusInput(e.currentTarget),
-    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      blurInput(e.currentTarget),
+    onFocus: (
+      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    ) => focusInput(e.currentTarget),
+    onBlur: (
+      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    ) => blurInput(e.currentTarget),
   };
 
   const renderControl = () => {
@@ -395,9 +392,7 @@ export function FilterField({
                 }}
               />
             </span>
-            <span style={{ fontSize: 13, color: "#374151" }}>
-              {value ? "Yes" : "No"}
-            </span>
+            <span style={{ fontSize: 13, color: "#374151" }}>{value ? "Yes" : "No"}</span>
           </button>
         );
 

@@ -1,4 +1,4 @@
-import { TransferList } from "./components/TransferList";
+import { TransferList } from "./components/TransferList/TransferList";
 
 export { TransferList };
 export default TransferList;
@@ -25,4 +25,4 @@ export {
   copyToClipboard,
   setTransferListClipboard,
   getTransferListClipboard,
-} from "./common";
+} from "./utils";

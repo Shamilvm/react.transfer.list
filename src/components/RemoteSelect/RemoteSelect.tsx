@@ -1,20 +1,11 @@
 import * as React from "react";
-import {
-  AutocompleteFetchFn,
-  FilterConfig,
-  FilterOption,
-} from "../types";
-import {
-  defaultAutocompleteFetchFn,
-  getListLimit,
-  useRemoteListOptions,
-} from "../common";
-import {
-  ChevronDownIcon,
-  DropdownOptionRow,
-  MultiSelectBox,
-} from "./filter/MultiSelect";
-import { inputStyle } from "./filter/styles";
+import { AutocompleteFetchFn, FilterConfig } from "../../types";
+import { defaultAutocompleteFetchFn } from "../../utils";
+import { getListLimit, useRemoteListOptions } from "../../hooks";
+import { ChevronDownIcon } from "../../icons";
+import { DropdownOptionRow } from "../filter/MultiSelect";
+import { FloatingDropdown } from "../filter/FloatingDropdown";
+import { inputStyle } from "../filter/fieldStyles";
 
 export function RemoteSelect({
   config,
@@ -31,6 +22,7 @@ export function RemoteSelect({
   const [open, setOpen] = React.useState(false);
   const [focused, setFocused] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
 
   const selectedOption = React.useMemo(() => {
@@ -45,41 +37,35 @@ export function RemoteSelect({
 
   const selectedForMerge = selectedOption ? [selectedOption] : [];
 
-  const {
-    options,
-    loading,
-    loadingMore,
-    hasMore,
-    error,
-    loadMore,
-  } = useRemoteListOptions({
-    remoteUrl: config.remoteUrl,
-    staticOptions: config.options ?? [],
-    fetchFn: autocompleteFetchFn,
-    search: config.remoteUrl ? inputValue : "",
-    limit: getListLimit(config),
-    enabled: open,
-    selected: selectedForMerge,
-  });
+  const { options, loading, loadingMore, hasMore, error, loadMore } =
+    useRemoteListOptions({
+      remoteUrl: config.remoteUrl,
+      staticOptions: config.options ?? [],
+      fetchFn: autocompleteFetchFn,
+      search: config.remoteUrl ? inputValue : "",
+      limit: getListLimit(config),
+      enabled: open,
+      selected: selectedForMerge,
+    });
 
   const displayLabel =
     options.find((o) => o.value === value)?.label ?? selectedOption?.label ?? "";
 
   const filteredOptions = config.remoteUrl
     ? options
-    : options.filter((opt) =>
-        opt.label.toLowerCase().includes(inputValue.toLowerCase()),
-      );
+    : options.filter((opt) => opt.label.toLowerCase().includes(inputValue.toLowerCase()));
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        containerRef.current?.contains(target) ||
+        dropdownRef.current?.contains(target)
       ) {
-        setOpen(false);
-        setFocused(false);
+        return;
       }
+      setOpen(false);
+      setFocused(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -108,8 +94,8 @@ export function RemoteSelect({
           justifyContent: "space-between",
           cursor: "pointer",
           textAlign: "left",
-          borderColor: focused || open ? "#93c5fd" : "#e5e7eb",
-          boxShadow: focused || open ? "0 0 0 3px rgba(59,130,246,0.12)" : "none",
+          borderColor: focused || open ? "#60a5fa" : "#cbd5e1",
+          boxShadow: focused || open ? "0 0 0 3px rgba(59,130,246,0.14)" : "none",
           color: value ? "#111827" : "#9ca3af",
         }}
       >
@@ -134,18 +120,13 @@ export function RemoteSelect({
         </span>
       </button>
 
-      {open && (
+      <FloatingDropdown anchorRef={containerRef} dropdownRef={dropdownRef} open={open}>
         <div
           style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            left: 0,
-            right: 0,
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
+            border: "1px solid #cbd5e1",
+            borderRadius: 10,
             background: "#fff",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-            zIndex: 20,
+            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.12)",
             overflow: "hidden",
           }}
         >
@@ -188,7 +169,14 @@ export function RemoteSelect({
             />
 
             {loading && filteredOptions.length === 0 ? (
-              <div style={{ padding: 16, textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+              <div
+                style={{
+                  padding: 16,
+                  textAlign: "center",
+                  fontSize: 13,
+                  color: "#6b7280",
+                }}
+              >
                 Loading...
               </div>
             ) : (
@@ -206,7 +194,14 @@ export function RemoteSelect({
             )}
 
             {loadingMore && (
-              <div style={{ padding: 10, textAlign: "center", fontSize: 12, color: "#6b7280" }}>
+              <div
+                style={{
+                  padding: 10,
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "#6b7280",
+                }}
+              >
                 Loading more...
               </div>
             )}
@@ -232,7 +227,7 @@ export function RemoteSelect({
             )}
           </div>
         </div>
-      )}
+      </FloatingDropdown>
     </div>
   );
 }

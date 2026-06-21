@@ -6,8 +6,16 @@ import peerDepsExternal from "rollup-plugin-peer-deps-external";
 export default {
   input: "src/index.ts",
   output: [
-    { file: "dist/index.cjs.js", format: "cjs" },  // CommonJS (require)
-    { file: "dist/index.esm.js", format: "esm" },  // ES Module (import)
+    { file: "dist/index.cjs.js", format: "cjs" }, // CommonJS (require)
+    { file: "dist/index.esm.js", format: "esm" }, // ES Module (import)
   ],
-  plugins: [peerDepsExternal(), resolve(), commonjs(), typescript()],
+  plugins: [
+    peerDepsExternal(),
+    resolve(),
+    commonjs(),
+    typescript({
+      tsconfig: "tsconfig.build.json",
+      useTsconfigDeclarationDir: true,
+    }),
+  ],
 };

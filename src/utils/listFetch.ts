@@ -1,9 +1,6 @@
-import * as React from "react";
-import { AutocompleteFetchFn, FilterOption, ListFetchParams } from "../types";
+import { AutocompleteFetchFn, FilterOption } from "../types";
 
-export type { ListFetchParams };
-
-/** Maps CRM TagType `{ id, text }` or `{ label, value }` to FilterOption */
+/** Maps `{ id, text }` or `{ label, value }` API rows to FilterOption */
 export function mapToFilterOptions(data: unknown): FilterOption[] {
   if (!Array.isArray(data)) return [];
 
@@ -32,9 +29,7 @@ export function mapToFilterOptions(data: unknown): FilterOption[] {
     .filter((item): item is FilterOption => item != null);
 }
 
-export function mergeFilterOptions(
-  ...groups: FilterOption[][]
-): FilterOption[] {
+export function mergeFilterOptions(...groups: FilterOption[][]): FilterOption[] {
   const seen = new Set<string>();
   const merged: FilterOption[] = [];
 
@@ -49,7 +44,7 @@ export function mergeFilterOptions(
   return merged;
 }
 
-/** Default fetch for `apiSelectLink(...)` style `/list` endpoints */
+/** Default fetch for paginated `/list` endpoints */
 export const defaultAutocompleteFetchFn: AutocompleteFetchFn = async (
   url,
   params = {},
@@ -78,14 +73,3 @@ export const defaultAutocompleteFetchFn: AutocompleteFetchFn = async (
   if (Array.isArray(result?.data)) return mapToFilterOptions(result.data);
   return [];
 };
-
-export function useDebouncedValue<T>(value: T, delayMs = 300): T {
-  const [debounced, setDebounced] = React.useState(value);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-
-  return debounced;
-}

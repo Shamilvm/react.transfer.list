@@ -1,43 +1,6 @@
 import * as React from "react";
-
-export function CheckIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-
-export function ChevronDownIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-
-const chipStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 4,
-  padding: "4px 8px",
-  borderRadius: 6,
-  background: "#e0f2fe",
-  border: "1px solid #bae6fd",
-  color: "#0369a1",
-  fontSize: 12,
-  fontWeight: 500,
-  lineHeight: 1.2,
-  maxWidth: "100%",
-};
+import { chipStyle, inlineSearchStyle } from "../../styles/tokens";
+import { CheckIcon } from "../../icons";
 
 export function SelectionChip({
   label,
@@ -111,9 +74,9 @@ export function MultiSelectBox({
         padding: "6px 8px",
         minHeight,
         borderRadius: 8,
-        border: `1px solid ${focused ? "#93c5fd" : "#e5e7eb"}`,
+        border: `1px solid ${focused ? "#60a5fa" : "#cbd5e1"}`,
         background: "#fff",
-        boxShadow: focused ? "0 0 0 3px rgba(59,130,246,0.12)" : "none",
+        boxShadow: focused ? "0 0 0 3px rgba(59,130,246,0.14)" : "none",
         cursor: "text",
         transition: "border-color 0.15s, box-shadow 0.15s",
       }}
@@ -140,10 +103,12 @@ export function MultiSelectToolbar({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: 8,
+        flexWrap: "wrap",
+        gap: "6px 12px",
+        marginBottom: 10,
       }}
     >
-      <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>
+      <span style={{ fontSize: 11, color: "#64748b", fontWeight: 500 }}>
         {selectedCount > 0
           ? `${selectedCount} of ${totalCount} selected`
           : `${totalCount} options`}
@@ -205,9 +170,11 @@ export function ToggleOptionPill({
         gap: 6,
         padding: "7px 12px",
         borderRadius: 8,
-        border: selected ? "1px solid #0baae9" : "1px solid #e5e7eb",
-        background: selected ? "#e0f2fe" : "#fff",
-        color: selected ? "#0369a1" : "#374151",
+        border: selected ? "1px solid #0baae9" : "1px solid #cbd5e1",
+        background: selected
+          ? "linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%)"
+          : "#fff",
+        color: selected ? "#0369a1" : "#334155",
         fontSize: 13,
         fontWeight: selected ? 600 : 500,
         cursor: "pointer",
@@ -292,13 +259,4 @@ export function DropdownOptionRow({
   );
 }
 
-export const inlineSearchStyle: React.CSSProperties = {
-  flex: "1 1 80px",
-  minWidth: 60,
-  border: "none",
-  outline: "none",
-  background: "transparent",
-  fontSize: 13,
-  color: "#111827",
-  padding: "2px 4px",
-};
+export { inlineSearchStyle };
