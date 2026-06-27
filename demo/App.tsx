@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import TransferList, { mapToFilterOptions } from "react-transfer-list";
+import TransferList, { mapToFilterOptions } from "@veeyem/react-transfer-list";
 import type {
   TransferItem,
   FetchFn,
   AutocompleteFetchFn,
-} from "react-transfer-list";
+} from "@veeyem/react-transfer-list";
 
 const MOCK_EMPLOYEES: TransferItem[] = [
   { id: 1, text: "Alice Johnson", media: "https://i.pravatar.cc/40?img=1" },
@@ -66,7 +66,7 @@ const mockAutocompleteFetchFn: AutocompleteFetchFn = async (_url, params) => {
  *
  * import { axiosGet } from "@function/service";
  * import { apiSelectLink } from "@function/service/functions";
- * import { mapToFilterOptions } from "react-transfer-list";
+ * import { mapToFilterOptions } from "@veeyem/react-transfer-list";
  *
  * const appAutocompleteFetchFn: AutocompleteFetchFn = async (url, params) => {
  *   const data = await axiosGet({

@@ -1,6 +1,6 @@
 {
-  "name": "react-transfer-list",
-  "version": "1.1.0",
+  "name": "@veeyem/react-transfer-list",
+  "version": "1.0.0",
   "description": "A configurable dual-list transfer component with search, filters, and copy/paste support",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",
@@ -18,7 +18,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "lint": "eslint src demo vite.demo.config.ts rollup.config.js eslint.config.js vitest.config.ts vitest.setup.ts",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"demo/**/*.{ts,tsx}\" \"*.{js,ts,json}\"",
@@ -35,7 +35,11 @@
     "dual-list",
     "picker"
   ],
-  "author": "",
+  "author": "Shamil Vm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shamilvm/react.transfer.list"
+  },
   "license": "MIT",
   "sideEffects": [
     "**/styles/injectStyles.ts",
@@ -70,5 +74,8 @@
     "typescript-eslint": "^8.61.1",
     "vite": "^7.3.1",
     "vitest": "^4.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

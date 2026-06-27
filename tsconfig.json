@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "react-transfer-list": ["./src/index.ts"]
+      "@veeyem/react-transfer-list": ["./src/index.ts"]
     },
     "target": "ES2018",
     "lib": ["ES2018", "DOM"],
@@ -12,5 +12,6 @@
     "strict": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts", "src/**/*.test.tsx"]
 }

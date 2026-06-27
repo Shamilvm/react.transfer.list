@@ -1,4 +1,4 @@
-# react-transfer-list
+# @veeyem/react-transfer-list
 
 A React dual-list (transfer list) component with search, configurable filters, remote data fetching, and copy/paste support.
 
@@ -20,7 +20,7 @@ A React dual-list (transfer list) component with search, configurable filters, r
 ## Installation
 
 ```bash
-npm install react-transfer-list
+npm install @veeyem/react-transfer-list
 ```
 
 ## Quick start
@@ -31,8 +31,8 @@ Pass an array as `remoteUrl` when you already have items in memory:
 
 ```tsx
 import { useState } from "react";
-import TransferList from "react-transfer-list";
-import type { TransferItem } from "react-transfer-list";
+import TransferList from "@veeyem/react-transfer-list";
+import type { TransferItem } from "@veeyem/react-transfer-list";
 
 const users: TransferItem[] = [
   { id: 1, text: "Alice" },
@@ -59,7 +59,7 @@ export function Example() {
 Pass a URL and optional custom fetch function:
 
 ```tsx
-import TransferList, { defaultFetchFn } from "react-transfer-list";
+import TransferList, { defaultFetchFn } from "@veeyem/react-transfer-list";
 
 <TransferList
   label="Employees"
@@ -67,7 +67,7 @@ import TransferList, { defaultFetchFn } from "react-transfer-list";
   fetchFn={defaultFetchFn}
   value={selected}
   onChange={setSelected}
-/>
+/>;
 ```
 
 `defaultFetchFn` sends `search` and `filter` query params and accepts either a raw array or `{ data: [...] }` in the JSON response.
@@ -77,7 +77,7 @@ import TransferList, { defaultFetchFn } from "react-transfer-list";
 Enable the filter panel with `isFilter` and a `filters` config:
 
 ```tsx
-import TransferList, { defaultAutocompleteFetchFn } from "react-transfer-list";
+import TransferList, { defaultAutocompleteFetchFn } from "@veeyem/react-transfer-list";
 
 <TransferList
   label="Employees"
@@ -105,7 +105,7 @@ import TransferList, { defaultAutocompleteFetchFn } from "react-transfer-list";
       ],
     },
   ]}
-/>
+/>;
 ```
 
 Supported filter field types: `text`, `number`, `textarea`, `select`, `autocomplete`, `checkbox`, `switch`, `radio`, `date`, `time`, `datetime`, `slider`, `tags`, `color`, `chip`.
@@ -115,7 +115,7 @@ Supported filter field types: `text`, `number`, `textarea`, `select`, `autocompl
 ### List fetch (`FetchFn`)
 
 ```tsx
-import type { FetchFn } from "react-transfer-list";
+import type { FetchFn } from "@veeyem/react-transfer-list";
 
 const fetchFn: FetchFn = async (url, { search, filter }) => {
   const response = await fetch(`${url}?search=${search ?? ""}`);
@@ -129,8 +129,8 @@ const fetchFn: FetchFn = async (url, { search, filter }) => {
 Use `mapToFilterOptions` to normalize API rows shaped as `{ id, text }` or `{ label, value }`:
 
 ```tsx
-import { mapToFilterOptions } from "react-transfer-list";
-import type { AutocompleteFetchFn } from "react-transfer-list";
+import { mapToFilterOptions } from "@veeyem/react-transfer-list";
+import type { AutocompleteFetchFn } from "@veeyem/react-transfer-list";
 
 const autocompleteFetchFn: AutocompleteFetchFn = async (url, params) => {
   const response = await fetch(
@@ -143,17 +143,17 @@ const autocompleteFetchFn: AutocompleteFetchFn = async (url, params) => {
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `label` | `string` | — | Base label for both panels (e.g. `"Users"` → `"Users excluded"` / `"Users included"`) |
-| `remoteUrl` | `string \| TransferItem[]` | — | API URL or static item list for the left panel |
-| `fetchFn` | `FetchFn` | `defaultFetchFn` | Loads available items when `remoteUrl` is a string |
-| `value` | `TransferItem[]` | — | Controlled list of included (right-side) items |
-| `onChange` | `(items: TransferItem[]) => void` | — | Called when the included list changes |
-| `filters` | `FilterConfig[]` | `[]` | Filter field definitions |
-| `autocompleteFetchFn` | `AutocompleteFetchFn` | `defaultAutocompleteFetchFn` | Loads remote options for select/autocomplete filters |
-| `className` | `string` | — | Extra class on the root element |
-| `isFilter` | `boolean` | `true` | Show filter toggle and filter panel |
+| Prop                  | Type                              | Default                      | Description                                                                           |
+| --------------------- | --------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| `label`               | `string`                          | —                            | Base label for both panels (e.g. `"Users"` → `"Users excluded"` / `"Users included"`) |
+| `remoteUrl`           | `string \| TransferItem[]`        | —                            | API URL or static item list for the left panel                                        |
+| `fetchFn`             | `FetchFn`                         | `defaultFetchFn`             | Loads available items when `remoteUrl` is a string                                    |
+| `value`               | `TransferItem[]`                  | —                            | Controlled list of included (right-side) items                                        |
+| `onChange`            | `(items: TransferItem[]) => void` | —                            | Called when the included list changes                                                 |
+| `filters`             | `FilterConfig[]`                  | `[]`                         | Filter field definitions                                                              |
+| `autocompleteFetchFn` | `AutocompleteFetchFn`             | `defaultAutocompleteFetchFn` | Loads remote options for select/autocomplete filters                                  |
+| `className`           | `string`                          | —                            | Extra class on the root element                                                       |
+| `isFilter`            | `boolean`                         | `true`                       | Show filter toggle and filter panel                                                   |
 
 ### `TransferItem`
 
@@ -167,15 +167,15 @@ type TransferItem = {
 
 ## Exported helpers
 
-| Export | Description |
-|--------|-------------|
-| `defaultFetchFn` | Default GET fetch for list endpoints |
-| `defaultAutocompleteFetchFn` | Default GET fetch for paginated option lists |
-| `mapToFilterOptions` | Maps API rows to `{ label, value }` |
-| `dedupeById` | Deduplicates items by `id` |
-| `parseTransferItems` | Parses and validates clipboard JSON |
-| `buildFilterArray` | Builds active filter payload from form values |
-| `copyToClipboard` | Copies text to the clipboard |
+| Export                                                  | Description                                       |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| `defaultFetchFn`                                        | Default GET fetch for list endpoints              |
+| `defaultAutocompleteFetchFn`                            | Default GET fetch for paginated option lists      |
+| `mapToFilterOptions`                                    | Maps API rows to `{ label, value }`               |
+| `dedupeById`                                            | Deduplicates items by `id`                        |
+| `parseTransferItems`                                    | Parses and validates clipboard JSON               |
+| `buildFilterArray`                                      | Builds active filter payload from form values     |
+| `copyToClipboard`                                       | Copies text to the clipboard                      |
 | `setTransferListClipboard` / `getTransferListClipboard` | In-memory clipboard shared between list instances |
 
 Types are exported from the package entry: `TransferItem`, `TransferListProps`, `FilterConfig`, `FetchFn`, `AutocompleteFetchFn`, and others.
