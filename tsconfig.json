@@ -1,9 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@veeyem/react-transfer-list": ["./src/index.ts"]
-    },
     "target": "ES2018",
     "lib": ["ES2018", "DOM"],
     "module": "ESNext",

@@ -1,4 +1,4 @@
-import { ActiveFilter, FilterConfig, FilterOption } from "../types";
+import { ActiveFilter, FilterConfig, FilterOption, TransferItem } from "../types";
 
 export function buildFilterArray(
   filterValues: Record<string, unknown>,
@@ -88,4 +88,37 @@ export function getChipLabel(
 
   const displayVal = Array.isArray(val) ? val.join(", ") : String(val ?? "");
   return `${displayKey}: ${displayVal}`;
+}
+
+export function filterLocalItems(
+  items: TransferItem[],
+  filters: ActiveFilter[],
+  configs: FilterConfig[],
+): TransferItem[] {
+  if (filters.length === 0) return items;
+
+  const types = new Map(configs.map(({ key, type }) => [key, type]));
+  const criteria = filters.reduce<[string, unknown][]>((entries, filter) => {
+    entries.push(...Object.entries(filter));
+    return entries;
+  }, []);
+
+  return items.filter((item) =>
+    criteria.every(([key, expected]) => {
+      if (!Object.prototype.hasOwnProperty.call(item, key)) return false;
+      const actual = item[key as keyof TransferItem];
+      const type = types.get(key);
+
+      if (type === "text" || type === "textarea") {
+        return (
+          typeof actual === "string" &&
+          actual.toLowerCase().includes(String(expected).trim().toLowerCase())
+        );
+      }
+
+      const actualValues: unknown[] = Array.isArray(actual) ? actual : [actual];
+      const expectedValues: unknown[] = Array.isArray(expected) ? expected : [expected];
+      return expectedValues.some((value) => actualValues.includes(value));
+    }),
+  );
 }

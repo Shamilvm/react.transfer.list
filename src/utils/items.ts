@@ -26,7 +26,12 @@ export function excludeByIds(
 export function isValidTransferItem(item: unknown): item is TransferItem {
   if (!item || typeof item !== "object") return false;
   const candidate = item as TransferItem;
-  return candidate.id != null && typeof candidate.text === "string";
+  return (
+    (typeof candidate.id === "string" ||
+      (typeof candidate.id === "number" && Number.isFinite(candidate.id))) &&
+    typeof candidate.text === "string" &&
+    (candidate.media === undefined || typeof candidate.media === "string")
+  );
 }
 
 export function parseTransferItems(data: unknown): TransferItem[] {

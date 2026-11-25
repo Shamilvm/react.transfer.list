@@ -31,6 +31,7 @@ export type ListFetchParams = {
   search?: string;
   limit?: number;
   page?: number;
+  signal?: AbortSignal;
 };
 
 export type FilterConfig = {
@@ -57,7 +58,7 @@ export type ActiveFilter = Record<string, unknown>;
 
 export type FetchFn = (
   url: string,
-  params: { search?: string; filter?: ActiveFilter[] },
+  params: { search?: string; filter?: ActiveFilter[]; signal?: AbortSignal },
 ) => Promise<TransferItem[]>;
 
 export type AutocompleteFetchFn = (
@@ -75,6 +76,8 @@ export type TransferListProps = {
   autocompleteFetchFn?: AutocompleteFetchFn;
   className?: string;
   isFilter?: boolean;
+  /** Show controls for reordering selected items. Defaults to false. */
+  enableOrdering?: boolean;
 };
 
 export type FilterPanelProps = {

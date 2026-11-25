@@ -108,6 +108,10 @@ import TransferList, { defaultAutocompleteFetchFn } from "@veeyem/react-transfer
 />;
 ```
 
+For a local array, a filter's `key` identifies a property on each item, including any extra properties passed with the item. Text and textarea filters use case-insensitive substring matching. Other filters match exact values, and a multi-value filter matches if any selected value is present. Items must match every applied filter. Clearing search keeps the applied filters, and setting `isFilter={false}` suspends them until filters are enabled again.
+
+Remote select, autocomplete, checkbox, chip, and radio fields accept a `remoteUrl` and a page size via `limit`. **Load more** adds another page when the previous page is full.
+
 Supported filter field types: `text`, `number`, `textarea`, `select`, `autocomplete`, `checkbox`, `switch`, `radio`, `date`, `time`, `datetime`, `slider`, `tags`, `color`, `chip`.
 
 ## Custom fetch functions
@@ -117,8 +121,11 @@ Supported filter field types: `text`, `number`, `textarea`, `select`, `autocompl
 ```tsx
 import type { FetchFn } from "@veeyem/react-transfer-list";
 
-const fetchFn: FetchFn = async (url, { search, filter }) => {
-  const response = await fetch(`${url}?search=${search ?? ""}`);
+const fetchFn: FetchFn = async (url, { search, filter, signal }) => {
+  const endpoint = new URL(url, window.location.href);
+  endpoint.searchParams.set("search", search ?? "");
+  endpoint.searchParams.set("filter", JSON.stringify(filter ?? []));
+  const response = await fetch(endpoint, { signal });
   const json = await response.json();
   return json.data;
 };
@@ -133,9 +140,11 @@ import { mapToFilterOptions } from "@veeyem/react-transfer-list";
 import type { AutocompleteFetchFn } from "@veeyem/react-transfer-list";
 
 const autocompleteFetchFn: AutocompleteFetchFn = async (url, params) => {
-  const response = await fetch(
-    `${url}?search=${params?.search ?? ""}&limit=${params?.limit ?? 50}`,
-  );
+  const endpoint = new URL(url, window.location.href);
+  endpoint.searchParams.set("search", params?.search ?? "");
+  endpoint.searchParams.set("limit", String(params?.limit ?? 50));
+  endpoint.searchParams.set("page", String(params?.page ?? 1));
+  const response = await fetch(endpoint, { signal: params?.signal });
   const json = await response.json();
   return mapToFilterOptions(json.data ?? json);
 };
@@ -154,6 +163,7 @@ const autocompleteFetchFn: AutocompleteFetchFn = async (url, params) => {
 | `autocompleteFetchFn` | `AutocompleteFetchFn`             | `defaultAutocompleteFetchFn` | Loads remote options for select/autocomplete filters                                  |
 | `className`           | `string`                          | —                            | Extra class on the root element                                                       |
 | `isFilter`            | `boolean`                         | `true`                       | Show filter toggle and filter panel                                                   |
+| `enableOrdering`      | `boolean`                         | `false`                      | Number selected items and enable drag, button and keyboard reordering                            |
 
 ### `TransferItem`
 
@@ -180,12 +190,20 @@ type TransferItem = {
 
 Types are exported from the package entry: `TransferItem`, `TransferListProps`, `FilterConfig`, `FetchFn`, `AutocompleteFetchFn`, and others.
 
+## Bulk transfers and clipboard
+
+Bulk transfer buttons act on the rows shown in their panel. **Remove matches** keeps selected rows hidden by the active search. In autocomplete, **Select all** adds the currently displayed options and keeps existing selections.
+
+Set `enableOrdering` to number the selected items and reorder them by dragging the grip, using the **Move up** / **Move down** buttons that appear on hover, or pressing <kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Alt</kbd>+<kbd>↓</kbd> on a focused row. Drops land above or below the target row depending on the pointer position, and keyboard moves are announced to screen readers. Reordering passes the full selection in its new order to `onChange`. When a search is active, reordering moves visible items among their existing positions and leaves hidden items in their original positions.
+
+Paste reads the system clipboard first and falls back to the shared in-page clipboard if the system clipboard cannot be read. Its status counts only newly added IDs.
+
 ## Local demo
 
-Clone the repo and run the demo app (uses live `src/`, not the built `dist/`):
+Clone the repo and run the demo app. It builds the package first and imports it through the public ESM entry point.
 
 ```bash
-npm install
+npm ci
 npm run demo
 ```
 
@@ -200,6 +218,12 @@ npm run lint         # ESLint
 npm run format       # Prettier
 npm run test         # Vitest
 ```
+
+## Release verification
+
+Run `npm run verify` to type-check, lint, run the unit tests, build from a clean `dist/`, install the npm tarball in a temporary consumer, and build the demo against the package entry point. The tarball check imports and renders the component through CommonJS and ESM using the locally installed React peer dependencies.
+
+GitHub Actions runs the same checks on pushes and pull requests with Node.js 22 and 24. `npm pack` rebuilds and verifies the tarball. `npm publish` also runs type-checking, lint, and unit tests before packaging.
 
 ## License
 

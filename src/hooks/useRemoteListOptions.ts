@@ -39,14 +39,19 @@ export function useRemoteListOptions({
 
   const fetchPage = React.useCallback(
     async (pageNum: number, append: boolean) => {
-      if (!remoteUrl || !enabled) return;
+      if (!remoteUrl || !enabled || search !== debouncedSearch) return;
 
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
       if (append) setLoadingMore(true);
-      else setLoading(true);
+      else {
+        setLoading(true);
+        setLoadingMore(false);
+        setHasMore(false);
+        setOptions([]);
+      }
       setError(null);
 
       try {
@@ -54,6 +59,7 @@ export function useRemoteListOptions({
           search: debouncedSearch,
           limit,
           page: pageNum,
+          signal: controller.signal,
         });
 
         if (controller.signal.aborted) return;
@@ -77,13 +83,13 @@ export function useRemoteListOptions({
         }
       }
     },
-    [remoteUrl, enabled, fetchFn, debouncedSearch, limit],
+    [remoteUrl, enabled, fetchFn, search, debouncedSearch, limit],
   );
 
   React.useEffect(() => {
-    if (!remoteUrl) return;
     fetchPage(1, false);
-  }, [remoteUrl, debouncedSearch, limit, enabled, fetchPage]);
+    return () => abortRef.current?.abort();
+  }, [fetchPage]);
 
   const loadMore = React.useCallback(() => {
     if (!hasMore || loading || loadingMore) return;
@@ -95,16 +101,14 @@ export function useRemoteListOptions({
     fetchPage(1, false);
   }, [fetchPage]);
 
-  React.useEffect(() => {
-    return () => abortRef.current?.abort();
-  }, []);
+  const waitingForSearch = enabled && !!remoteUrl && search !== debouncedSearch;
 
   return {
-    options: remoteUrl ? options : staticOptions,
-    loading,
+    options: remoteUrl ? (waitingForSearch ? [] : options) : staticOptions,
+    loading: loading || waitingForSearch,
     loadingMore,
-    hasMore: remoteUrl ? hasMore : false,
-    error,
+    hasMore: !!remoteUrl && !waitingForSearch && hasMore,
+    error: waitingForSearch ? null : error,
     loadMore,
     refresh,
   };

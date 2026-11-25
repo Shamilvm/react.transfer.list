@@ -1,4 +1,5 @@
 import { AutocompleteFetchFn, FilterOption } from "../types";
+import { withQueryParams } from "./query";
 
 /** Maps `{ id, text }` or `{ label, value }` API rows to FilterOption */
 export function mapToFilterOptions(data: unknown): FilterOption[] {
@@ -52,15 +53,15 @@ export const defaultAutocompleteFetchFn: AutocompleteFetchFn = async (
   const query = new URLSearchParams();
   const search = params.search?.trim() ?? "";
 
-  if (search) query.append("search", search);
+  if (params.search !== undefined) query.set("search", search);
   query.append("limit", String(params.limit ?? 50));
-  if (params.page && params.page > 1) {
+  if (params.page !== undefined) {
     query.append("page", String(params.page));
   }
 
-  const qs = query.toString();
-  const response = await fetch(qs ? `${url}?${qs}` : url, {
+  const response = await fetch(withQueryParams(url, query), {
     method: "GET",
+    signal: params.signal,
     headers: { "Content-Type": "application/json" },
   });
 

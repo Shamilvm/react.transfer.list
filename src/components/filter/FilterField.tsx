@@ -30,10 +30,12 @@ function TagsInput({
   value,
   onChange,
   placeholder,
+  labelId,
 }: {
   value: string[];
   onChange: (v: string[]) => void;
   placeholder?: string;
+  labelId: string;
 }) {
   const [draft, setDraft] = React.useState("");
   const [focused, setFocused] = React.useState(false);
@@ -61,6 +63,7 @@ function TagsInput({
       ))}
       <input
         ref={inputRef}
+        aria-labelledby={labelId}
         type="text"
         value={draft}
         placeholder={
@@ -93,12 +96,10 @@ function CheckboxGroup({
   options,
   value,
   onChange,
-  loading = false,
 }: {
   options: FilterOption[];
   value: string[];
   onChange: (v: string[]) => void;
-  loading?: boolean;
 }) {
   const toggle = (optValue: string) => {
     onChange(
@@ -110,36 +111,31 @@ function CheckboxGroup({
 
   return (
     <div>
-      {loading && options.length === 0 ? (
-        <div style={{ fontSize: 13, color: "#6b7280", padding: "8px 0" }}>
-          Loading options...
-        </div>
-      ) : (
-        <>
-          <MultiSelectToolbar
-            selectedCount={value.length}
-            totalCount={options.length}
-            onSelectAll={() => onChange(options.map((o) => o.value))}
-            onClear={() => onChange([])}
+      <MultiSelectToolbar
+        selectedCount={options.filter((option) => value.includes(option.value)).length}
+        totalCount={options.length}
+        canClear={value.length > 0}
+        onSelectAll={() =>
+          onChange([...new Set([...value, ...options.map((o) => o.value)])])
+        }
+        onClear={() => onChange([])}
+      />
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+        }}
+      >
+        {options.map((opt) => (
+          <ToggleOptionPill
+            key={opt.value}
+            label={opt.label}
+            selected={value.includes(opt.value)}
+            onClick={() => toggle(opt.value)}
           />
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-            }}
-          >
-            {options.map((opt) => (
-              <ToggleOptionPill
-                key={opt.value}
-                label={opt.label}
-                selected={value.includes(opt.value)}
-                onClick={() => toggle(opt.value)}
-              />
-            ))}
-          </div>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -149,13 +145,11 @@ function ChipGroup({
   value,
   onChange,
   multiple = false,
-  loading = false,
 }: {
   options: FilterOption[];
   value: string | string[];
   onChange: (v: string | string[]) => void;
   multiple?: boolean;
-  loading?: boolean;
 }) {
   if (multiple) {
     const selected = Array.isArray(value) ? value : [];
@@ -169,30 +163,27 @@ function ChipGroup({
 
     return (
       <div>
-        {loading && options.length === 0 ? (
-          <div style={{ fontSize: 13, color: "#6b7280", padding: "8px 0" }}>
-            Loading options...
-          </div>
-        ) : (
-          <>
-            <MultiSelectToolbar
-              selectedCount={selected.length}
-              totalCount={options.length}
-              onSelectAll={() => onChange(options.map((o) => o.value))}
-              onClear={() => onChange([])}
+        <MultiSelectToolbar
+          selectedCount={
+            options.filter((option) => selected.includes(option.value)).length
+          }
+          totalCount={options.length}
+          canClear={selected.length > 0}
+          onSelectAll={() =>
+            onChange([...new Set([...selected, ...options.map((o) => o.value)])])
+          }
+          onClear={() => onChange([])}
+        />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {options.map((opt) => (
+            <ToggleOptionPill
+              key={opt.value}
+              label={opt.label}
+              selected={selected.includes(opt.value)}
+              onClick={() => toggle(opt.value)}
             />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {options.map((opt) => (
-                <ToggleOptionPill
-                  key={opt.value}
-                  label={opt.label}
-                  selected={selected.includes(opt.value)}
-                  onClick={() => toggle(opt.value)}
-                />
-              ))}
-            </div>
-          </>
-        )}
+          ))}
+        </div>
       </div>
     );
   }
@@ -227,31 +218,26 @@ function ChipGroup({
   );
 }
 
-function useFieldOptions(
-  config: FilterConfig,
-  autocompleteFetchFn?: AutocompleteFetchFn,
-) {
-  return useRemoteListOptions({
-    remoteUrl: config.remoteUrl,
-    staticOptions: config.options ?? [],
-    fetchFn: autocompleteFetchFn ?? defaultAutocompleteFetchFn,
-    limit: getListLimit(config),
-    enabled: !!config.remoteUrl,
-  });
-}
-
 export function FilterField({
   config,
   value,
   onChange,
   autocompleteFetchFn,
 }: FilterFieldProps) {
-  const remoteOptions = useFieldOptions(config, autocompleteFetchFn);
-  const resolvedOptions = config.remoteUrl
-    ? remoteOptions.options
-    : (config.options ?? []);
+  const labelId = React.useId();
+  const showsRemoteOptions =
+    !!config.remoteUrl &&
+    (config.type === "checkbox" || config.type === "chip" || config.type === "radio");
+  const remoteOptions = useRemoteListOptions({
+    remoteUrl: showsRemoteOptions ? config.remoteUrl : undefined,
+    staticOptions: config.options,
+    fetchFn: autocompleteFetchFn ?? defaultAutocompleteFetchFn,
+    limit: getListLimit(config),
+  });
+  const resolvedOptions = remoteOptions.options;
 
   const inputHandlers = {
+    "aria-labelledby": labelId,
     onFocus: (
       e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
     ) => focusInput(e.currentTarget),
@@ -307,6 +293,7 @@ export function FilterField({
         if (config.remoteUrl) {
           return (
             <RemoteSelect
+              labelId={labelId}
               config={config}
               value={typeof value === "string" ? value : ""}
               onChange={onChange}
@@ -333,6 +320,7 @@ export function FilterField({
       case "autocomplete":
         return (
           <RemoteAutocomplete
+            labelId={labelId}
             config={config}
             value={Array.isArray(value) ? (value as FilterOption[]) : []}
             onChange={onChange}
@@ -346,7 +334,6 @@ export function FilterField({
             options={resolvedOptions}
             value={Array.isArray(value) ? (value as string[]) : []}
             onChange={onChange}
-            loading={config.remoteUrl ? remoteOptions.loading : false}
           />
         );
 
@@ -355,6 +342,7 @@ export function FilterField({
           <button
             type="button"
             role="switch"
+            aria-labelledby={labelId}
             aria-checked={!!value}
             onClick={() => onChange(!value)}
             style={{
@@ -399,7 +387,7 @@ export function FilterField({
       case "radio":
         return (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px" }}>
-            {config.options?.map((opt) => (
+            {resolvedOptions.map((opt) => (
               <label
                 key={opt.value}
                 style={{
@@ -413,7 +401,7 @@ export function FilterField({
               >
                 <input
                   type="radio"
-                  name={config.key}
+                  name={labelId}
                   value={opt.value}
                   checked={value === opt.value}
                   onChange={() => onChange(opt.value)}
@@ -480,6 +468,7 @@ export function FilterField({
             </div>
             <input
               type="range"
+              aria-labelledby={labelId}
               min={min}
               max={max}
               step={step}
@@ -494,6 +483,7 @@ export function FilterField({
       case "tags":
         return (
           <TagsInput
+            labelId={labelId}
             value={Array.isArray(value) ? (value as string[]) : []}
             onChange={onChange}
             placeholder={config.placeholder}
@@ -505,6 +495,7 @@ export function FilterField({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <input
               type="color"
+              aria-labelledby={labelId}
               value={typeof value === "string" && value ? value : "#000000"}
               onChange={(e) => onChange(e.target.value)}
               style={{
@@ -543,7 +534,6 @@ export function FilterField({
             }
             onChange={onChange}
             multiple={config.multiple}
-            loading={config.remoteUrl ? remoteOptions.loading : false}
           />
         );
 
@@ -553,9 +543,27 @@ export function FilterField({
   };
 
   return (
-    <div style={fieldWrapStyle}>
-      <label style={labelStyle}>{config.label}</label>
-      {renderControl()}
+    <div style={fieldWrapStyle} role="group" aria-labelledby={labelId}>
+      <span id={labelId} style={labelStyle}>
+        {config.label}
+      </span>
+      {showsRemoteOptions && remoteOptions.loading ? (
+        <div role="status">Loading options...</div>
+      ) : (
+        renderControl()
+      )}
+      {showsRemoteOptions && remoteOptions.error && (
+        <div role="alert">{remoteOptions.error}</div>
+      )}
+      {showsRemoteOptions && remoteOptions.hasMore && (
+        <button
+          type="button"
+          onClick={remoteOptions.loadMore}
+          disabled={remoteOptions.loading || remoteOptions.loadingMore}
+        >
+          {remoteOptions.loadingMore ? "Loading more..." : "Load more"}
+        </button>
+      )}
     </div>
   );
 }

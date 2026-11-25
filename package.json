@@ -1,32 +1,38 @@
 {
   "name": "@veeyem/react-transfer-list",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A configurable dual-list transfer component with search, filters, and copy/paste support",
-  "main": "./dist/index.cjs.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.esm.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs.js"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rollup -c",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && rollup -c",
     "dev": "rollup -c --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
-    "lint": "eslint src demo vite.demo.config.ts rollup.config.js eslint.config.js vitest.config.ts vitest.setup.ts",
+    "lint": "eslint src demo vite.demo.config.ts rollup.config.js eslint.config.js vitest.config.ts vitest.setup.ts scripts",
     "lint:fix": "npm run lint -- --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"demo/**/*.{ts,tsx}\" \"*.{js,ts,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"demo/**/*.{ts,tsx}\" \"*.{js,ts,json}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"demo/**/*.{ts,tsx}\" \"scripts/**/*.js\" \"*.{js,ts,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"demo/**/*.{ts,tsx}\" \"scripts/**/*.js\" \"*.{js,ts,json}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "test:package": "node scripts/smoke-package.js",
+    "prepack": "npm run build && npm run test:package",
+    "prepublishOnly": "npm run check",
+    "verify": "npm run check && npm run prepack && vite build --config vite.demo.config.ts",
+    "prestart": "npm run build",
     "start": "vite --config vite.demo.config.ts",
+    "predemo": "npm run build",
     "demo": "vite --config vite.demo.config.ts"
   },
   "keywords": [

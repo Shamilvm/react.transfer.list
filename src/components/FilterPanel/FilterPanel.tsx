@@ -19,7 +19,6 @@ export function FilterPanel({
   onReset,
   autocompleteFetchFn,
 }: FilterPanelProps) {
-  const hasAnyFilter = filters.some((f) => hasFilterValue(filterValues[f.key]));
   const activeCount = filters.filter((f) => hasFilterValue(filterValues[f.key])).length;
 
   return (
@@ -62,7 +61,7 @@ export function FilterPanel({
 
       <div className="stl-filter-panel__footer">
         <p className="stl-filter-panel__footer-hint">
-          {hasAnyFilter
+          {activeCount > 0
             ? `${activeCount} filter${activeCount !== 1 ? "s" : ""} ready to apply`
             : "Set filter values, then apply to update results"}
         </p>
@@ -78,7 +77,6 @@ export function FilterPanel({
           <button
             type="button"
             className="stl-filter-btn stl-filter-btn--apply"
-            disabled={!hasAnyFilter}
             onClick={onApply}
           >
             <ApplyIcon />

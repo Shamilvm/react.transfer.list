@@ -553,6 +553,10 @@ export const componentStyles = `
 
 .stl-list-panel__row {
   display: flex;
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
@@ -560,6 +564,215 @@ export const componentStyles = `
   cursor: pointer;
   background: #fff;
   transition: background 0.15s, box-shadow 0.15s;
+}
+
+.stl-list-panel__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stl-list-panel__ordered-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.stl-list-panel__ordered-row:hover,
+.stl-list-panel__ordered-row:focus-within {
+  background: #f6fdf9;
+}
+
+.stl-list-panel__ordered-row .stl-list-panel__row {
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+  padding: 9px 4px 9px 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.stl-list-panel__ordered-row .stl-list-panel__row:hover {
+  background: transparent;
+}
+
+/* Grip */
+.stl-list-panel__drag-handle {
+  flex: 0 0 28px;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  color: #cbd5e1;
+  transition: color 0.15s;
+  touch-action: none;
+}
+
+.stl-list-panel__ordered-row:hover .stl-list-panel__drag-handle,
+.stl-list-panel__ordered-row:focus-within .stl-list-panel__drag-handle {
+  color: #64748b;
+}
+
+.stl-list-panel__drag-handle[draggable="true"] {
+  cursor: grab;
+}
+
+.stl-list-panel__drag-handle[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.stl-list-panel__drag-handle[draggable="false"] {
+  visibility: hidden;
+}
+
+.stl-list-panel__drag-grip {
+  width: 8px;
+  height: 14px;
+  background: radial-gradient(circle, currentColor 1.1px, transparent 1.6px) 0 0 / 4px 4.67px;
+}
+
+/* Position number */
+.stl-list-panel__position {
+  flex: 0 0 auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Drag states */
+.stl-list-panel__ordered-row[data-dragging] {
+  opacity: 0.4;
+  background: #f8fafc;
+}
+
+.stl-list-panel__ordered-row[data-drop]::after {
+  position: absolute;
+  left: 28px;
+  right: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+  content: "";
+  pointer-events: none;
+  z-index: 1;
+}
+
+.stl-list-panel__ordered-row[data-drop]::before {
+  position: absolute;
+  left: 22px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid #059669;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+  pointer-events: none;
+  z-index: 2;
+}
+
+.stl-list-panel__ordered-row[data-drop="before"]::after { top: -1px; }
+.stl-list-panel__ordered-row[data-drop="after"]::after { bottom: -1px; }
+.stl-list-panel__ordered-row[data-drop="before"]::before { top: -4px; }
+.stl-list-panel__ordered-row[data-drop="after"]::before { bottom: -4px; }
+
+/* Up / down: stacked, revealed on hover or focus (always shown on touch) */
+.stl-list-panel__order-controls {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.stl-list-panel__ordered-row:hover .stl-list-panel__order-controls,
+.stl-list-panel__ordered-row:focus-within .stl-list-panel__order-controls {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .stl-list-panel__order-controls { opacity: 1; }
+}
+
+.stl-list-panel__order-controls button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 15px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.stl-list-panel__order-chevron {
+  width: 5px;
+  height: 5px;
+  border-top: 1.75px solid currentColor;
+  border-left: 1.75px solid currentColor;
+  transform: translateY(1.5px) rotate(45deg);
+}
+
+.stl-list-panel__order-controls button:last-child .stl-list-panel__order-chevron {
+  transform: translateY(-1.5px) rotate(225deg);
+}
+
+.stl-list-panel__order-controls button:hover:not(:disabled) {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.stl-list-panel__order-controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.stl-list-panel__order-controls button:focus-visible {
+  outline: 2px solid #0369a1;
+  outline-offset: 0;
+}
+
+.stl-list-panel__row-action--ordered {
+  padding: 0 12px 0 6px;
+  align-self: stretch;
+  align-items: center;
+  cursor: pointer;
+}
+
+.stl-list-panel__ordered-row:hover .stl-list-panel__row-action--ordered {
+  opacity: 1;
+}
+
+.stl-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stl-list-panel__row:focus-visible {
+  outline: 2px solid #0369a1;
+  outline-offset: -2px;
 }
 
 .stl-list-panel__row:hover {

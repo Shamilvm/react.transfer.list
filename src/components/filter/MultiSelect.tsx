@@ -91,11 +91,13 @@ export function MultiSelectToolbar({
   totalCount,
   onSelectAll,
   onClear,
+  canClear = selectedCount > 0,
 }: {
   selectedCount: number;
   totalCount: number;
   onSelectAll: () => void;
   onClear: () => void;
+  canClear?: boolean;
 }) {
   return (
     <div
@@ -133,14 +135,14 @@ export function MultiSelectToolbar({
         <button
           type="button"
           onClick={onClear}
-          disabled={selectedCount === 0}
+          disabled={!canClear}
           style={{
             border: "none",
             background: "transparent",
-            color: selectedCount === 0 ? "#9ca3af" : "#dc2626",
+            color: !canClear ? "#9ca3af" : "#dc2626",
             fontSize: 11,
             fontWeight: 600,
-            cursor: selectedCount === 0 ? "default" : "pointer",
+            cursor: !canClear ? "default" : "pointer",
             padding: 0,
           }}
         >

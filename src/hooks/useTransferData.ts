@@ -1,13 +1,22 @@
 import * as React from "react";
-import { ActiveFilter, FetchFn, TransferItem } from "../types";
+import { ActiveFilter, FetchFn, FilterConfig, TransferItem } from "../types";
 import { excludeByIds, filterBySearch } from "../utils/items";
+import { filterLocalItems } from "../utils/filters";
+import { useDebouncedValue } from "./useDebouncedValue";
 
 type UseTransferDataProps = {
   remoteUrl: string | TransferItem[];
   fetchFn: FetchFn;
   search: string;
   filter: ActiveFilter[];
+  filterConfigs: FilterConfig[];
   dataRight: TransferItem[];
+};
+
+type RemoteResult = {
+  request: (signal: AbortSignal) => Promise<TransferItem[]>;
+  items: TransferItem[];
+  error: string | null;
 };
 
 export function useTransferData({
@@ -15,49 +24,60 @@ export function useTransferData({
   fetchFn,
   search,
   filter,
+  filterConfigs,
   dataRight,
 }: UseTransferDataProps) {
-  const [dataLeft, setDataLeft] = React.useState<TransferItem[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const debouncedSearch = useDebouncedValue(search);
+  const [result, setResult] = React.useState<RemoteResult | null>(null);
 
-  const fetchData = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const request = React.useMemo(() => {
+    if (typeof remoteUrl !== "string" || search !== debouncedSearch) return null;
 
-    try {
-      if (Array.isArray(remoteUrl)) {
-        const available = excludeByIds(remoteUrl, dataRight);
-        setDataLeft(filterBySearch(available, search));
-        return;
-      }
-
-      const queryFilter: ActiveFilter[] = [...filter];
-      const rightItemIds = dataRight.map((item) => item.id);
-
-      if (rightItemIds.length > 0) {
-        queryFilter.push({ selectedIds: rightItemIds });
-      }
-
-      const result = await fetchFn(remoteUrl, {
-        search,
-        filter: queryFilter,
-      });
-
-      const data = Array.isArray(result) ? result : [];
-      setDataLeft(excludeByIds(data, dataRight));
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch data";
-      setError(message);
-      setDataLeft([]);
-    } finally {
-      setLoading(false);
+    const queryFilter = [...filter];
+    if (dataRight.length > 0) {
+      queryFilter.push({ selectedIds: dataRight.map((item) => item.id) });
     }
-  }, [remoteUrl, fetchFn, search, filter, dataRight]);
+
+    return async (signal: AbortSignal) =>
+      fetchFn(remoteUrl, { search, filter: queryFilter, signal });
+  }, [remoteUrl, fetchFn, search, debouncedSearch, filter, dataRight]);
 
   React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!request) return;
 
-  return { dataLeft, setDataLeft, loading, error, refetch: fetchData };
+    const controller = new AbortController();
+    request(controller.signal).then(
+      (items) => {
+        if (!controller.signal.aborted) {
+          setResult({ request, items: Array.isArray(items) ? items : [], error: null });
+        }
+      },
+      (error: unknown) => {
+        if (!controller.signal.aborted) {
+          const message = error instanceof Error ? error.message : "Failed to fetch data";
+          setResult({ request, items: [], error: message });
+        }
+      },
+    );
+    return () => controller.abort();
+  }, [request]);
+
+  if (Array.isArray(remoteUrl)) {
+    return {
+      dataLeft: filterLocalItems(
+        filterBySearch(excludeByIds(remoteUrl, dataRight), search),
+        filter,
+        filterConfigs,
+      ),
+      loading: false,
+      error: null,
+    };
+  }
+
+  const current = result?.request === request ? result : null;
+  return {
+    dataLeft: current ? excludeByIds(current.items, dataRight) : [],
+    loading: current === null,
+    error: current?.error ?? null,
+  };
 }

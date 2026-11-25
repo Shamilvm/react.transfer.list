@@ -101,6 +101,7 @@ export default function App() {
         value={selected}
         onChange={setSelected}
         isFilter
+        enableOrdering
         autocompleteFetchFn={mockAutocompleteFetchFn}
         filters={[
           {

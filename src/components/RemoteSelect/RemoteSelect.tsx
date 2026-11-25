@@ -9,11 +9,13 @@ import { inputStyle } from "../filter/fieldStyles";
 
 export function RemoteSelect({
   config,
+  labelId,
   value,
   onChange,
   autocompleteFetchFn = defaultAutocompleteFetchFn,
 }: {
   config: FilterConfig;
+  labelId: string;
   value: string;
   onChange: (val: string) => void;
   autocompleteFetchFn?: AutocompleteFetchFn;
@@ -83,6 +85,7 @@ export function RemoteSelect({
     <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
       <button
         type="button"
+        aria-labelledby={labelId}
         onClick={() => {
           setOpen((v) => !v);
           setFocused(true);

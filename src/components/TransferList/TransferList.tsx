@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ActiveFilter, TransferItem, TransferListProps } from "../../types";
 import { FilterPanel } from "../FilterPanel/FilterPanel";
-import { ListPanel } from "../ListPanel/ListPanel";
+import { DropPlacement, ListPanel } from "../ListPanel/ListPanel";
 import {
   buildFilterArray,
   dedupeById,
@@ -19,16 +19,20 @@ import { useTransferData } from "../../hooks";
 import { injectStyles } from "../../styles/injectStyles";
 import { FilterToggleIcon } from "../../icons";
 
+const EMPTY_FILTERS: NonNullable<TransferListProps["filters"]> = [];
+const NO_ACTIVE_FILTERS: ActiveFilter[] = [];
+
 export function TransferList({
   label,
   remoteUrl,
   fetchFn = defaultFetchFn,
   value,
   onChange,
-  filters = [],
+  filters = EMPTY_FILTERS,
   autocompleteFetchFn = defaultAutocompleteFetchFn,
   className,
   isFilter = true,
+  enableOrdering = false,
 }: TransferListProps) {
   const defaultFilterValues = React.useMemo(
     () => getDefaultFilterValues(filters),
@@ -38,54 +42,42 @@ export function TransferList({
   const [leftSearch, setLeftSearch] = React.useState("");
   const [rightSearch, setRightSearch] = React.useState("");
   const [showFilters, setShowFilters] = React.useState(false);
-  const [filterValues, setFilterValues] =
-    React.useState<Record<string, unknown>>(defaultFilterValues);
-  const [appliedFilter, setAppliedFilter] = React.useState<ActiveFilter[]>(() =>
-    isFilter ? buildFilterArray(defaultFilterValues, filters) : [],
+  const [draftValues, setDraftValues] = React.useState<Record<string, unknown> | null>(
+    null,
   );
-  const [dataRight, setDataRight] = React.useState<TransferItem[]>(() =>
-    dedupeById(value ?? []),
+  const [appliedValues, setAppliedValues] = React.useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const filterValues = draftValues ?? defaultFilterValues;
+  const activeValues = appliedValues ?? defaultFilterValues;
+  const appliedFilter = React.useMemo(() => {
+    if (!isFilter) return NO_ACTIVE_FILTERS;
+    const configured: Record<string, unknown> = Object.create(null);
+    for (const { key } of filters) {
+      if (Object.prototype.hasOwnProperty.call(activeValues, key)) {
+        configured[key] = activeValues[key];
+      }
+    }
+    return buildFilterArray(configured, filters);
+  }, [isFilter, activeValues, filters]);
+  const [uncontrolledValue, setUncontrolledValue] = React.useState<TransferItem[]>([]);
+  const dataRight = React.useMemo(
+    () => (value === undefined ? uncontrolledValue : dedupeById(value)),
+    [value, uncontrolledValue],
   );
   const [copyPasteMessage, setCopyPasteMessage] = React.useState<string | null>(null);
-
-  const initialized = React.useRef(false);
-  const didMount = React.useRef(false);
 
   React.useEffect(() => {
     injectStyles();
   }, []);
 
-  React.useEffect(() => {
-    if (!initialized.current && Array.isArray(value) && value.length > 0) {
-      initialized.current = true;
-      setDataRight(dedupeById(value));
-    }
-  }, [value]);
-
-  React.useEffect(() => {
-    if (didMount.current) {
-      onChange?.(dataRight);
-    } else {
-      didMount.current = true;
-    }
-  }, [dataRight, onChange]);
-
-  const prevLeftSearch = React.useRef(leftSearch);
-  React.useEffect(() => {
-    if (!isFilter) return;
-    if (prevLeftSearch.current && !leftSearch) {
-      const defaults = getDefaultFilterValues(filters);
-      setFilterValues(defaults);
-      setAppliedFilter(buildFilterArray(defaults, filters));
-    }
-    prevLeftSearch.current = leftSearch;
-  }, [leftSearch, isFilter, filters]);
-
-  const { dataLeft, setDataLeft, loading, error } = useTransferData({
+  const { dataLeft, loading, error } = useTransferData({
     remoteUrl,
     fetchFn,
     search: leftSearch,
     filter: appliedFilter,
+    filterConfigs: filters,
     dataRight,
   });
 
@@ -94,114 +86,123 @@ export function TransferList({
     [dataRight, rightSearch],
   );
 
-  const updateRight = React.useCallback(
-    (updater: (prev: TransferItem[]) => TransferItem[]) => {
-      setDataRight((prev) => dedupeById(updater(prev)));
-    },
-    [],
-  );
+  const updateRight = (items: TransferItem[]) => {
+    const next = dedupeById(items);
+    if (value === undefined) setUncontrolledValue(next);
+    onChange?.(next);
+  };
 
   const handleToggle = (item: TransferItem) => {
-    const isInRight = dataRight.some((r) => r.id === item.id);
-    if (isInRight) {
-      updateRight((prev) => prev.filter((e) => e.id !== item.id));
-      setDataLeft((prev) => dedupeById([...prev, item]));
-    } else {
-      updateRight((prev) => [...prev, item]);
-      setDataLeft((prev) => prev.filter((e) => e.id !== item.id));
-    }
+    const isInRight = dataRight.some((selected) => selected.id === item.id);
+    updateRight(
+      isInRight
+        ? dataRight.filter((selected) => selected.id !== item.id)
+        : [...dataRight, item],
+    );
   };
 
-  const handleAllRight = () => {
-    updateRight((prev) => [...prev, ...dataLeft]);
-    setDataLeft([]);
+  const handleReorder = (
+    item: TransferItem,
+    target: TransferItem,
+    placement: DropPlacement,
+  ) => {
+    if (item === target) return;
+    const reordered = filteredRight.filter((visible) => visible !== item);
+    const targetIndex = reordered.indexOf(target);
+    if (targetIndex === -1 || reordered.length === filteredRight.length) return;
+    reordered.splice(targetIndex + (placement === "after" ? 1 : 0), 0, item);
+
+    const visibleIds = new Set(filteredRight.map(({ id }) => id));
+    let visibleIndex = 0;
+    updateRight(
+      dataRight.map((selected) =>
+        visibleIds.has(selected.id) ? reordered[visibleIndex++] : selected,
+      ),
+    );
   };
 
+  const handleAllRight = () => updateRight([...dataRight, ...dataLeft]);
   const handleAllLeft = () => {
-    setDataLeft((prev) => dedupeById([...prev, ...dataRight]));
-    updateRight(() => []);
+    const visibleIds = new Set(filteredRight.map(({ id }) => id));
+    updateRight(dataRight.filter(({ id }) => !visibleIds.has(id)));
   };
 
   const handleFilterChange = (key: string, val: unknown) => {
-    setFilterValues((prev) => ({ ...prev, [key]: val }));
+    setDraftValues((prev) => ({ ...(prev ?? defaultFilterValues), [key]: val }));
   };
 
   const handleApplyFilters = () => {
-    setAppliedFilter(buildFilterArray(filterValues, filters));
+    setAppliedValues(filterValues);
     setShowFilters(false);
   };
 
   const handleDeleteFilterChip = (key: string) => {
-    const next = { ...filterValues };
-    delete next[key];
-    setFilterValues(next);
-    setAppliedFilter(buildFilterArray(next, filters));
+    setDraftValues((prev) => ({ ...(prev ?? defaultFilterValues), [key]: undefined }));
+    setAppliedValues((prev) => ({ ...(prev ?? defaultFilterValues), [key]: undefined }));
   };
 
   const handleClearAll = () => {
-    setFilterValues({});
-    setAppliedFilter([]);
+    setDraftValues({});
+    setAppliedValues({});
   };
 
-  const handleResetFilters = () => {
-    const defaults = getDefaultFilterValues(filters);
-    setFilterValues(defaults);
-  };
+  const handleResetFilters = () => setDraftValues(null);
+
+  const messageTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  React.useEffect(() => () => clearTimeout(messageTimer.current), []);
 
   const showCopyPasteMessage = (message: string) => {
     setCopyPasteMessage(message);
-    setTimeout(() => setCopyPasteMessage(null), 2500);
+    clearTimeout(messageTimer.current);
+    messageTimer.current = setTimeout(() => setCopyPasteMessage(null), 2500);
   };
 
   const applyPastedItems = (items: TransferItem[]) => {
-    const parsed = dedupeById(items);
-    if (parsed.length === 0) return null;
-
-    const pastedIds = new Set(parsed.map((item) => item.id));
-    updateRight((prev) => [...prev, ...parsed]);
-    setDataLeft((prev) => prev.filter((item) => !pastedIds.has(item.id)));
-    return parsed.length;
+    const selectedIds = new Set(dataRight.map(({ id }) => id));
+    const additions = dedupeById(items).filter(({ id }) => !selectedIds.has(id));
+    if (additions.length > 0) updateRight([...dataRight, ...additions]);
+    showCopyPasteMessage(`Pasted ${additions.length} item(s)`);
   };
 
-  const handleCopyRight = async () => {
-    const text = JSON.stringify(dataRight, null, 2);
-    setTransferListClipboard(dataRight);
+  const latestApplyPastedItems = React.useRef(applyPastedItems);
+  React.useEffect(() => {
+    latestApplyPastedItems.current = applyPastedItems;
+  });
 
+  const handleCopyRight = async () => {
+    setTransferListClipboard(dataRight);
     try {
-      await copyToClipboard(text);
+      await copyToClipboard(JSON.stringify(dataRight, null, 2));
       showCopyPasteMessage(`Copied ${dataRight.length} item(s)`);
     } catch {
-      showCopyPasteMessage(`Copied ${dataRight.length} item(s)`);
+      showCopyPasteMessage(`Copied ${dataRight.length} item(s) within this page`);
     }
   };
 
   const handlePasteRight = async () => {
-    const fromMemory = getTransferListClipboard();
-    if (fromMemory?.length) {
-      const count = applyPastedItems(fromMemory);
-      if (count != null) {
-        showCopyPasteMessage(`Pasted ${count} item(s)`);
-        return;
-      }
-    }
-
+    let text: string;
     try {
-      const text = await navigator.clipboard.readText();
-      const parsed = parseTransferItems(JSON.parse(text));
-      if (parsed.length === 0) {
-        showCopyPasteMessage("No valid items in clipboard");
-        return;
-      }
-
-      const count = applyPastedItems(parsed);
-      if (count != null) {
-        showCopyPasteMessage(`Pasted ${count} item(s)`);
-      }
+      text = await navigator.clipboard.readText();
     } catch {
-      showCopyPasteMessage(
-        "Failed to paste — copy from another list first, or ensure clipboard has valid JSON",
-      );
+      const fromMemory = getTransferListClipboard();
+      if (fromMemory?.length) latestApplyPastedItems.current(fromMemory);
+      else showCopyPasteMessage("Failed to read the clipboard");
+      return;
     }
+
+    let parsed: TransferItem[];
+    try {
+      parsed = parseTransferItems(JSON.parse(text));
+    } catch {
+      parsed = [];
+    }
+
+    if (parsed.length === 0) {
+      showCopyPasteMessage("No valid items in clipboard");
+      return;
+    }
+
+    latestApplyPastedItems.current(parsed);
   };
 
   const activeChips = appliedFilter.filter((f) => {
@@ -247,7 +248,7 @@ export function TransferList({
             const key = Object.keys(f)[0];
             return (
               <div key={key} className="stl-chip">
-                {getChipLabel(f, filters, filterValues)}
+                {getChipLabel(f, filters, activeValues)}
                 <button
                   type="button"
                   onClick={() => handleDeleteFilterChip(key)}
@@ -289,6 +290,7 @@ export function TransferList({
           isRight
           onToggleItem={handleToggle}
           onMoveAll={handleAllLeft}
+          onReorder={enableOrdering ? handleReorder : undefined}
           search={rightSearch}
           onSearchChange={setRightSearch}
           searchPlaceholder="Search selected..."

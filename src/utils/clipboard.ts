@@ -23,6 +23,9 @@ export async function copyToClipboard(text: string) {
   textarea.style.left = "-99999px";
   document.body.appendChild(textarea);
   textarea.select();
-  document.execCommand("copy");
-  document.body.removeChild(textarea);
+  try {
+    if (!document.execCommand("copy")) throw new Error("Clipboard copy failed");
+  } finally {
+    textarea.remove();
+  }
 }

@@ -10,6 +10,8 @@ import {
   XMarkIcon,
 } from "../../icons";
 
+export type DropPlacement = "before" | "after";
+
 type ListPanelProps = {
   items: TransferItem[];
   title: string;
@@ -19,6 +21,11 @@ type ListPanelProps = {
   isRight?: boolean;
   onToggleItem: (item: TransferItem) => void;
   onMoveAll: () => void;
+  onReorder?: (
+    item: TransferItem,
+    target: TransferItem,
+    placement: DropPlacement,
+  ) => void;
   loading?: boolean;
   error?: string | null;
   search?: string;
@@ -38,6 +45,7 @@ export function ListPanel({
   isRight = false,
   onToggleItem,
   onMoveAll,
+  onReorder,
   loading = false,
   error = null,
   search,
@@ -47,7 +55,46 @@ export function ListPanel({
   onPaste,
   copyPasteMessage,
 }: ListPanelProps) {
-  const moveAllDisabled = (totalCount ?? count) === 0;
+  const [dragged, setDragged] = React.useState<TransferItem | null>(null);
+  const [drop, setDrop] = React.useState<{
+    target: TransferItem;
+    placement: DropPlacement;
+  } | null>(null);
+  const [announcement, setAnnouncement] = React.useState("");
+  const pendingFocusId = React.useRef<TransferItem["id"] | null>(null);
+  const rowRefs = React.useRef(new Map<TransferItem["id"], HTMLButtonElement>());
+  const draggedIndex = dragged ? items.indexOf(dragged) : -1;
+
+  const endDrag = () => {
+    setDragged(null);
+    setDrop(null);
+  };
+
+  React.useLayoutEffect(() => {
+    const id = pendingFocusId.current;
+    if (id == null) return;
+    pendingFocusId.current = null;
+    rowRefs.current.get(id)?.focus();
+  }, [items]);
+
+  // A drop that would leave the item where it already is shows no indicator.
+  const isNoopDrop = (index: number, placement: DropPlacement) =>
+    draggedIndex === -1 ||
+    index === draggedIndex ||
+    (placement === "after" && index === draggedIndex - 1) ||
+    (placement === "before" && index === draggedIndex + 1);
+
+  const moveBy = (item: TransferItem, index: number, delta: -1 | 1) => {
+    const target = items[index + delta];
+    if (!onReorder || !target) return;
+    pendingFocusId.current = item.id;
+    onReorder(item, target, delta < 0 ? "before" : "after");
+    setAnnouncement(
+      `${item.text} moved to position ${index + delta + 1} of ${items.length}`,
+    );
+  };
+
+  const moveAllDisabled = loading || count === 0;
   const displayCount =
     showCount && totalCount != null && totalCount !== count
       ? `${count} / ${totalCount}`
@@ -55,7 +102,7 @@ export function ListPanel({
         ? String(count)
         : null;
   const hasToolbar = Boolean(onSearchChange || onCopy || onPaste);
-  const copyPasteFailed = copyPasteMessage?.toLowerCase().includes("fail") ?? false;
+  const copyPasteFailed = !!copyPasteMessage?.match(/^(Failed|No valid)/);
 
   return (
     <div
@@ -85,7 +132,7 @@ export function ListPanel({
             onClick={onMoveAll}
             disabled={moveAllDisabled}
           >
-            {isRight ? "Remove all" : "Move all"}
+            {isRight ? (search?.trim() ? "Remove matches" : "Remove all") : "Move all"}
             {isRight ? <XMarkIcon /> : <ChevronDoubleRightIcon />}
           </button>
         </div>
@@ -99,6 +146,7 @@ export function ListPanel({
                 </span>
                 <input
                   type="text"
+                  aria-label={searchPlaceholder}
                   placeholder={searchPlaceholder}
                   value={search ?? ""}
                   onChange={(e) => onSearchChange(e.target.value)}
@@ -107,7 +155,7 @@ export function ListPanel({
                 {search && (
                   <button
                     type="button"
-                    aria-label="Clear search"
+                    aria-label={`Clear ${isRight ? "selected" : "available"} search`}
                     onClick={() => onSearchChange("")}
                     className="stl-list-panel__search-clear"
                   >
@@ -171,39 +219,149 @@ export function ListPanel({
                 : "No items available"}
           </div>
         ) : (
-          <div>
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className={`stl-list-panel__row${isRight ? " stl-list-panel__row--right" : ""}`}
-                onClick={() => onToggleItem(item)}
-              >
-                {item.media ? (
-                  <img
-                    src={item.media}
-                    alt={item.text}
-                    className="stl-list-panel__avatar"
-                  />
-                ) : (
-                  <div
-                    className={`stl-list-panel__avatar-fallback${isRight ? " stl-list-panel__avatar-fallback--right" : ""}`}
-                  >
-                    {item.text?.charAt(0).toUpperCase()}
-                  </div>
-                )}
+          <ol className="stl-list-panel__items">
+            {items.map((item, index) => {
+              const dropPlacement =
+                drop?.target === item && !isNoopDrop(index, drop.placement)
+                  ? drop.placement
+                  : undefined;
 
-                <div className="stl-list-panel__item-text">{item.text}</div>
-
-                <div
-                  className={`stl-list-panel__row-action${isRight ? " stl-list-panel__row-action--remove" : ""}`}
+              return (
+                <li
+                  key={item.id}
+                  className={onReorder ? "stl-list-panel__ordered-row" : undefined}
+                  data-dragging={dragged === item || undefined}
+                  data-drop={dropPlacement}
+                  onDragOver={(event) => {
+                    if (!onReorder || draggedIndex === -1) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const placement: DropPlacement =
+                      event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                    if (drop?.target !== item || drop.placement !== placement) {
+                      setDrop({ target: item, placement });
+                    }
+                  }}
+                  onDrop={(event) => {
+                    if (!onReorder || !dragged) return;
+                    event.preventDefault();
+                    if (dropPlacement) onReorder(dragged, item, dropPlacement);
+                    endDrag();
+                  }}
                 >
-                  {isRight ? <XMarkIcon /> : <ChevronDoubleRightIcon />}
-                </div>
-              </div>
-            ))}
-          </div>
+                  {onReorder && (
+                    <span
+                      className="stl-list-panel__drag-handle"
+                      aria-hidden="true"
+                      title="Drag to reorder"
+                      draggable={items.length > 1}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", "");
+                        const row = event.currentTarget.parentElement;
+                        if (row) event.dataTransfer.setDragImage?.(row, 24, 20);
+                        setDragged(item);
+                      }}
+                      onDragEnd={endDrag}
+                    >
+                      <span className="stl-list-panel__drag-grip" />
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    ref={(node) => {
+                      if (node) rowRefs.current.set(item.id, node);
+                      else rowRefs.current.delete(item.id);
+                    }}
+                    aria-label={isRight ? `Remove ${item.text}` : `Move ${item.text}`}
+                    aria-keyshortcuts={
+                      onReorder ? "Alt+ArrowUp Alt+ArrowDown" : undefined
+                    }
+                    className={`stl-list-panel__row${isRight ? " stl-list-panel__row--right" : ""}`}
+                    onClick={() => onToggleItem(item)}
+                    onKeyDown={(event) => {
+                      if (!onReorder || !event.altKey) return;
+                      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                        event.preventDefault();
+                        moveBy(item, index, event.key === "ArrowUp" ? -1 : 1);
+                      }
+                    }}
+                  >
+                    {onReorder && (
+                      <span className="stl-list-panel__position" aria-hidden="true">
+                        {index + 1}
+                      </span>
+                    )}
+                    {item.media ? (
+                      <img src={item.media} alt="" className="stl-list-panel__avatar" />
+                    ) : (
+                      <span
+                        className={`stl-list-panel__avatar-fallback${isRight ? " stl-list-panel__avatar-fallback--right" : ""}`}
+                      >
+                        {item.text?.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+
+                    <span className="stl-list-panel__item-text">{item.text}</span>
+
+                    {!onReorder && (
+                      <span
+                        aria-hidden="true"
+                        className={`stl-list-panel__row-action${isRight ? " stl-list-panel__row-action--remove" : ""}`}
+                      >
+                        {isRight ? <XMarkIcon /> : <ChevronDoubleRightIcon />}
+                      </span>
+                    )}
+                  </button>
+                  {onReorder && (
+                    <>
+                      <div className="stl-list-panel__order-controls">
+                        <button
+                          type="button"
+                          aria-label={`Move ${item.text} up`}
+                          title="Move up (Alt+↑)"
+                          disabled={index === 0}
+                          onClick={() => moveBy(item, index, -1)}
+                        >
+                          <span
+                            className="stl-list-panel__order-chevron"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Move ${item.text} down`}
+                          title="Move down (Alt+↓)"
+                          disabled={index === items.length - 1}
+                          onClick={() => moveBy(item, index, 1)}
+                        >
+                          <span
+                            className="stl-list-panel__order-chevron"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </div>
+                      <span
+                        aria-hidden="true"
+                        className="stl-list-panel__row-action stl-list-panel__row-action--remove stl-list-panel__row-action--ordered"
+                        onClick={() => onToggleItem(item)}
+                      >
+                        <XMarkIcon />
+                      </span>
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         )}
       </div>
+      {onReorder && (
+        <div className="stl-visually-hidden" aria-live="polite">
+          {announcement}
+        </div>
+      )}
     </div>
   );
 }

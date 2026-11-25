@@ -1,12 +1,14 @@
 import { FetchFn } from "../types";
+import { withQueryParams } from "./query";
 
-export const defaultFetchFn: FetchFn = async (url, { search, filter }) => {
+export const defaultFetchFn: FetchFn = async (url, { search, filter, signal }) => {
   const filterParams = new URLSearchParams();
   filterParams.append("search", search ?? "");
   filterParams.append("filter", JSON.stringify(filter ?? []));
 
-  const response = await fetch(`${url}?${filterParams.toString()}`, {
+  const response = await fetch(withQueryParams(url, filterParams), {
     method: "GET",
+    signal,
     headers: { "Content-Type": "application/json" },
   });
 

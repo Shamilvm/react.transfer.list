@@ -1,6 +1,7 @@
 import * as React from "react";
 import { AutocompleteFetchFn, FilterConfig, FilterOption } from "../../types";
 import { defaultAutocompleteFetchFn } from "../../utils";
+import { mergeFilterOptions } from "../../utils/listFetch";
 import { getListLimit, useRemoteListOptions } from "../../hooks";
 import { ChevronDownIcon } from "../../icons";
 import {
@@ -14,11 +15,13 @@ import { FloatingDropdown } from "../filter/FloatingDropdown";
 
 export function RemoteAutocomplete({
   config,
+  labelId,
   value,
   onChange,
   autocompleteFetchFn = defaultAutocompleteFetchFn,
 }: {
   config: FilterConfig;
+  labelId: string;
   value: FilterOption[];
   onChange: (val: FilterOption[]) => void;
   autocompleteFetchFn?: AutocompleteFetchFn;
@@ -41,7 +44,6 @@ export function RemoteAutocomplete({
       search: config.remoteUrl ? inputValue : "",
       limit,
       enabled: open,
-      selected: value,
     });
 
   const filteredOptions = config.remoteUrl
@@ -70,7 +72,7 @@ export function RemoteAutocomplete({
     onChange(exists ? value.filter((v) => v.value !== option.value) : [...value, option]);
   };
 
-  const selectAll = () => onChange([...filteredOptions]);
+  const selectAll = () => onChange(mergeFilterOptions(value, filteredOptions));
   const clearAll = () => onChange([]);
 
   const handleListScroll = () => {
@@ -99,6 +101,7 @@ export function RemoteAutocomplete({
         ))}
         <input
           ref={inputRef}
+          aria-labelledby={labelId}
           type="text"
           value={inputValue}
           placeholder={
@@ -160,7 +163,12 @@ export function RemoteAutocomplete({
               }}
             >
               <MultiSelectToolbar
-                selectedCount={value.length}
+                selectedCount={
+                  filteredOptions.filter((option) =>
+                    value.some((selected) => selected.value === option.value),
+                  ).length
+                }
+                canClear={value.length > 0}
                 totalCount={filteredOptions.length}
                 onSelectAll={selectAll}
                 onClear={clearAll}
